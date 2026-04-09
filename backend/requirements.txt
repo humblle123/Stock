@@ -1,0 +1,8 @@
+akshare
+pandas
+numpy
+fastapi
+uvicorn
+langgraph
+python-dotenv
+pydantic
