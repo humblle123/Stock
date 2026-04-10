@@ -40,6 +40,12 @@ def main():
     os.makedirs(os.path.join(os.path.dirname(__file__), "data"), exist_ok=True)
     report_path = os.path.join(os.path.dirname(__file__), "data", "latest_report.json")
     import json
+    # 三线红优先：已进三线红的股票不再进KD1
+    s3_codes = {s.code for s in briefing.s3}
+    kd1_before = len(briefing.kd1)
+    briefing.kd1 = [s for s in briefing.kd1 if s.code not in s3_codes]
+    print(f"[KD1] 排除三线红重叠 {kd1_before}→{len(briefing.kd1)} 只")
+
     with open(report_path, "w", encoding="utf-8") as f:
         json.dump(briefing.model_dump(mode="json"), f, ensure_ascii=False, indent=2)
     print(f"[简报] 已保存至 {report_path}")
