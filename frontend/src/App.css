@@ -1019,8 +1019,8 @@ a:hover { color: var(--accent); }
 .sig-table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
 .sig-table thead tr { background: var(--surface); }
 .sig-table th {
-  padding: 8px 12px;
-  text-align: left;
+  padding: 8px 10px;
+  text-align: right;
   font-size: 11px;
   font-weight: 600;
   color: var(--text3);
@@ -1028,21 +1028,22 @@ a:hover { color: var(--accent); }
   cursor: pointer;
   user-select: none;
 }
+.sig-table th:first-child { text-align: left; }
 .sig-table th:hover { color: var(--text); background: #f0f0f0; }
-.sig-table th:first-child { text-align: left; padding-left: 16px; }
-.sig-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-.sig-table td:first-child { padding-left: 16px; }
+.sig-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; text-align: right; font-variant-numeric: tabular-nums; }
+.sig-table td:first-child { text-align: left; }
 .sig-table tbody tr.sig-row { cursor: pointer; }
 .sig-table tbody tr.sig-row:hover td { background: #f5f9ff; }
 .sig-table tbody tr.sig-row:active td { background: #e8f0ff; }
-.sig-name-cell { min-width: 90px; }
-.sig-name-cell .sig-name { display: block; font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px; }
+.sig-name-cell { min-width: 100px; }
+.sig-name-cell .sig-name { display: block; font-size: 13px; font-weight: 700; color: var(--text); }
 .sig-name-cell .sig-code { display: block; font-size: 10px; color: var(--text3); margin-top: 1px; }
-.sig-pct-cell { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.sig-pct-cell { font-size: 14px; font-weight: 900; }
 .sig-pct-cell.up   { color: #e53935; }
 .sig-pct-cell.down { color: #26a69a; }
-.sig-price-cell { font-size: 12px; color: var(--text2); font-variant-numeric: tabular-nums; }
-.sig-rps-cell  { font-size: 12px; font-variant-numeric: tabular-nums; }
+
+.sig-price-cell { font-size: 13px; color: var(--text2); }
+.sig-rps-cell  { font-size: 13px; font-weight: 600; }
 .sig-empty { text-align: center; color: var(--text3); padding: 24px !important; font-size: 13px; }
 
 /* 报表区 */

@@ -111,6 +111,7 @@ function SectionCard({
                 <table className="sig-table">
                   <thead>
                     <tr>
+                      <th>股票</th>
                       <th className="sortable" onClick={() => { setSortKey('change_pct'); setSortDir(d => d === 'desc' && sortKey === 'change_pct' ? 'asc' : 'desc') }}>
                         涨跌幅{sortKey === 'change_pct' ? (sortDir === 'desc' ? ' ↓' : ' ↑') : ''}
                       </th>
@@ -130,7 +131,7 @@ function SectionCard({
                   </thead>
                   <tbody>
                     {sorted.length === 0 ? (
-                      <tr><td colSpan={5} className="sig-empty">暂无信号</td></tr>
+                      <tr><td colSpan={6} className="sig-empty">暂无信号</td></tr>
                     ) : (
                       sorted.map(s => {
                         const pct   = s.metadata.change_pct ?? s.up ?? 0
