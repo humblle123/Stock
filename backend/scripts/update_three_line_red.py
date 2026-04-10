@@ -67,7 +67,7 @@ def update_three_line_red():
                     last_updated_date=?,
                     is_current=1
                 WHERE code=?
-            """, (name, today, today, today, code))
+            """, (name, today, today, code))
             print(f"[三线红] 重入 {code} {name} (第{old_entry_count+1}次)")
 
         else:

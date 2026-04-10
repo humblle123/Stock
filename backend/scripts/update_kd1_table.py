@@ -65,10 +65,10 @@ def update_kd1_table():
 
         elif row[7] == 'exit':  # 重入
             cur.execute(f"""
-                UPDATE {TABLE} SET name=?, first_date=?, last_date=?, consec_days=1,
+                UPDATE {TABLE} SET name=?, last_date=?, consec_days=1,
                     total_days=total_days+1, times=times+1, status='active', exit_date=NULL
                 WHERE code=?
-            """, (name, today, today, code))
+            """, (name, today, code))
             print(f"[KD1] 重入 {code} {name} (第{row[6]+1}次)")
 
         else:  # 继续在榜
