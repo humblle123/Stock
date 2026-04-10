@@ -19,9 +19,11 @@ export default function ChartPage() {
   const navigate = useNavigate()
 
   const strategy = searchParams.get('s') ?? ''
-  // /chart/:code?s=bian → 展示 s3（彼岸战法）
-  const section      = strategy === 'bian' ? 's3' : (strategy || 'technical')
-  const sectionLabel  = SECTION_LABELS[section] ?? section
+  const tab       = searchParams.get('tab') ?? ''
+  // strategy=bian 时，tab 参数区分三线红还是 KD1
+  const section   = strategy === 'bian' ? (tab === 'kd1' ? 'kd1' : 's3')
+                  : (strategy || 'technical')
+  const sectionLabel = SECTION_LABELS[section] ?? section
 
   const [info,   setInfo]   = useState<{ name: string; code: string; industry: string } | null>(null)
   const [kdata, setKdata]  = useState<unknown>(null)
@@ -45,12 +47,12 @@ export default function ChartPage() {
   const total = list.length
 
   const goPrev = useCallback(() => {
-    if (idx > 0)        navigate(`/chart/${list[idx - 1].code}?s=${strategy}`)
-  }, [idx, list, strategy, navigate])
+    if (idx > 0)        navigate(`/chart/${list[idx - 1].code}?s=${strategy}&tab=${tab}`)
+  }, [idx, list, strategy, tab, navigate])
 
   const goNext = useCallback(() => {
-    if (idx < total - 1) navigate(`/chart/${list[idx + 1].code}?s=${strategy}`)
-  }, [idx, total, list, strategy, navigate])
+    if (idx < total - 1) navigate(`/chart/${list[idx + 1].code}?s=${strategy}&tab=${tab}`)
+  }, [idx, total, list, strategy, tab, navigate])
 
   // ── 键盘 ↑↓ ─────────────────────────────────────────────────────────────────
   const handleKeyDown = useCallback((e: KeyboardEvent) => {

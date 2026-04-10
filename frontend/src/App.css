@@ -1017,6 +1017,9 @@ a:hover { color: var(--accent); }
   cursor: pointer;
   user-select: none;
   background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 .sig-table th:first-child { text-align: left; min-width: 80px; }
 .sig-table th:hover { color: var(--text); background: #f0f0f0; }

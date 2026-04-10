@@ -18,7 +18,7 @@ const TACTICS = [
   {
     key: 'bian',
     title: '彼岸战法',
-    desc: 'RPS三线红 + KD1',
+    desc: 'RPS三线红 + KD1一线红',
     color: '#f44336',
     bg: 'rgba(244,67,54,0.1)',
     border: 'rgba(244,67,54,0.3)',

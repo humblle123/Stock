@@ -74,7 +74,7 @@ export default function ChartView({ code, name, kdata }: Props) {
 
   const [mainVis, setMainVis] = useState<Record<MainKey, boolean>>({ daxian: true, zxdkx: true })
   const [kdjVals, setKdjVals] = useState<{K: number; D: number; J: number} | null>(null)
-  const [mainVals, setMainVals] = useState<{close: number; daxian: number; zxdkx: number; maxIdx: number; maxPrice: number; changePct: number} | null>(null)
+  const [mainVals, setMainVals] = useState<{close: number; daxian: number; zxdkx: number; changePct: number} | null>(null)
 
   useEffect(() => {
     const { candles } = kdata
@@ -87,8 +87,6 @@ export default function ChartView({ code, name, kdata }: Props) {
     const ups     = candles.map(d => d.up)
 
     const defaultStart = Math.max(0, dates.length - 80)
-    const visibleEnd  = dates.length - 1
-    const visibleStart = defaultStart
 
     const daxian = calcBigBro(closes)
     const zxdkx  = calcEMA2(closes)
@@ -98,16 +96,6 @@ export default function ChartView({ code, name, kdata }: Props) {
       arr.map((v, i) => v == null ? [i, '-'] : [i, +v.toFixed(2)])
 
     const volColor = (u: number) => u > 0 ? '#ef5350' : u < 0 ? '#26a69a' : '#9e9e9e'
-
-    // 可见区间内最高价的位置（用high找）
-    let maxIdx = visibleStart
-    let maxPrice = highs[visibleStart] ?? 0
-    for (let i = visibleStart; i <= visibleEnd; i++) {
-      if (highs[i] != null && highs[i] > maxPrice) {
-        maxPrice = highs[i]!
-        maxIdx = i
-      }
-    }
 
     import('echarts').then((echarts: typeof import('echarts')) => {
 
@@ -123,13 +111,17 @@ export default function ChartView({ code, name, kdata }: Props) {
             const arr = params as { seriesName: string; value: unknown[]; color: string }[]
             let html = ''
             arr.forEach(p => {
-              if (p.seriesName === 'K线') {
-                const vals = p.value as number[]
-                const dateIdx = dates.indexOf(p.value[0] as string)
-                const chg = ups[dateIdx] ?? 0
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const dp = (p as any)
+              const isCandle = dp.seriesName === 'K线'
+              if (isCandle) {
+                // ECharts candlestick: [open, close, low, high], dataIndex gives position
+                const chg = kdata.candles[dp.dataIndex]?.up ?? 0
                 const chgColor = chg > 0 ? '#ef5350' : chg < 0 ? '#26a69a' : '#999'
                 const chgSign  = chg > 0 ? '+' : ''
-                html += `<span style="color:#ef5350">●</span> 开 <b>${vals[0]?.toFixed(2)}</b> 高 <b>${vals[1]?.toFixed(2)}</b> 低 <b>${vals[2]?.toFixed(2)}</b> 收 <b>${vals[3]?.toFixed(2)}</b><br/><span style="color:${chgColor}">涨幅</span> <b>${chgSign}${chg.toFixed(2)}%</b>`
+                const v = dp.value as number[]
+                const o = v[0], c = v[1], l = v[2], h = v[3]
+                html += `<span style="color:#ef5350">●</span> 开 <b>${o?.toFixed(2)}</b> 高 <b>${h?.toFixed(2)}</b> 低 <b>${l?.toFixed(2)}</b> 收 <b>${c?.toFixed(2)}</b><br/><span style="color:${chgColor}">涨幅</span> <b>${chgSign}${chg.toFixed(2)}%</b>`
               } else {
                 const v = typeof p.value[1] === 'number' ? +p.value[1].toFixed(3) : '—'
                 html += `<span style="color:${p.color}">●</span> ${p.seriesName} <b>${v}</b> &nbsp; `
@@ -153,30 +145,6 @@ export default function ChartView({ code, name, kdata }: Props) {
             itemStyle: { color: '#ef5350', color0: '#26a69a', borderColor: '#ef5350', borderColor0: '#26a69a' } },
           ...(mainVis.daxian ? [{ type: 'line' as const, name: '大哥线', data: cat(daxian), lineStyle: { color: '#f5d300', width: 1.5 }, symbol: 'none' as const }] : []),
           ...(mainVis.zxdkx  ? [{ type: 'line' as const, name: '知行多空', data: cat(zxdkx), lineStyle: { color: '#ff7800', width: 1.5 }, symbol: 'none' as const }] : []),
-          // 最高价标注（直接在最高蜡烛上方）
-          {
-            type: 'line' as const, name: '_maxLine',
-            data: [[maxIdx, maxPrice]],
-            symbol: 'none' as const,
-            label: {
-              show: true, formatter: `↗最高 ${maxPrice.toFixed(2)}`,
-              position: 'insideTop', color: '#e53935', fontSize: 10, fontWeight: 700,
-              backgroundColor: 'rgba(255,255,255,0.9)', padding: [2, 4], borderRadius: 2,
-              borderColor: '#e53935', borderWidth: 1,
-            },
-          },
-          // 最新收盘标注（在最新蜡烛上方）
-          {
-            type: 'line' as const, name: '_lastLine',
-            data: [[closes.length - 1, closes[closes.length - 1] ?? 0]],
-            symbol: 'none' as const,
-            label: {
-              show: true, formatter: `◆收 ${(closes[closes.length - 1] ?? 0).toFixed(2)}`,
-              position: 'insideTop', color: '#1a1a1a', fontSize: 10, fontWeight: 700,
-              backgroundColor: 'rgba(255,255,255,0.9)', padding: [2, 4], borderRadius: 2,
-              borderColor: '#1a1a1a', borderWidth: 1,
-            },
-          },
         ],
         legend: { show: false },
       }, true)
@@ -188,7 +156,7 @@ export default function ChartView({ code, name, kdata }: Props) {
       const prevClose = closes[closes.length - 2] ?? closes[closes.length - 1]
       const changePct = prevClose ? ((lastClose - prevClose) / prevClose * 100) : 0
       if (lastClose != null && lastDaxian != null && lastZxdkx != null)
-        setMainVals({ close: +lastClose, daxian: +lastDaxian, zxdkx: +lastZxdkx, maxIdx, maxPrice, changePct })
+        setMainVals({ close: +lastClose, daxian: +lastDaxian, zxdkx: +lastZxdkx, changePct })
 
       // ── KDJ ─────────────────────────────────────────────────────────
       if (!charts.current.kdj && subRef1.current)
@@ -299,9 +267,6 @@ export default function ChartView({ code, name, kdata }: Props) {
                 </span>
                 <span className="sub-label" style={{ color: '#ff7800' }}>
                   知行多空 <b>{mainVals.zxdkx.toFixed(2)}</b>
-                </span>
-                <span className="sub-label" style={{ color: '#e53935' }}>
-                  最高 <b>{mainVals.maxPrice.toFixed(2)}</b>
                 </span>
                 <span className="sub-label" style={{ color: mainVals.changePct >= 0 ? '#ef5350' : '#26a69a' }}>
                   涨幅 <b>{mainVals.changePct > 0 ? '+' : ''}{mainVals.changePct.toFixed(2)}%</b>
