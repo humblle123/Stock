@@ -7,15 +7,9 @@ import KD1Table from '../components/KD1Table'
 
 // ── 常量 ────────────────────────────────────────────────────────────────────
 type SortKey = 'change_pct' | 'RPS50' | 'RPS120' | 'RPS250' | 'price'
+type SortDir  = 'desc' | 'asc'
 type ViewMode = 'sig' | 'rep'
 
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'change_pct', label: '涨跌幅' },
-  { key: 'price',      label: '现价'   },
-  { key: 'RPS50',      label: 'RPS50'  },
-  { key: 'RPS120',     label: 'RPS120' },
-  { key: 'RPS250',     label: 'RPS250' },
-]
 
 // ── 工具函数 ───────────────────────────────────────────────────────────────
 function rpsColor(v: number | undefined): string {
@@ -26,18 +20,13 @@ function rpsColor(v: number | undefined): string {
   return '#43a047'
 }
 
-function rpsGlow(v: number | undefined): string {
-  if (v == null || v < 90) return 'none'
-  if (v >= 95) return '0 0 8px 2px rgba(229,57,49,0.55)'
-  return '0 0 6px 1px rgba(255,111,0,0.45)'
-}
 
 function fmt(v: number | undefined, decimals = 2): string {
   if (v == null) return '—'
   return v.toFixed(decimals)
 }
 
-function sortSignals(sig: StockSignal[], key: SortKey): StockSignal[] {
+function sortSignals(sig: StockSignal[], key: SortKey, dir: SortDir): StockSignal[] {
   return [...sig].sort((a, b) => {
     let av: number, bv: number
     if (key === 'price') {
@@ -48,93 +37,10 @@ function sortSignals(sig: StockSignal[], key: SortKey): StockSignal[] {
       av = (a.metadata as Record<string, number | undefined>)[key] ?? -999
       bv = (b.metadata as Record<string, number | undefined>)[key] ?? -999
     }
-    return bv - av
+    return dir === 'desc' ? bv - av : av - bv
   })
 }
 
-// ── 单只股票卡片 ───────────────────────────────────────────────────────────
-function StockCard({ s, strategyKey }: { s: StockSignal; strategyKey: string }) {
-  const navigate = useNavigate()
-  const pct   = s.metadata.change_pct ?? s.up ?? 0
-  const price = s.price
-  const isUp  = pct >= 0
-
-  return (
-    <div
-      className="sig-card"
-      data-up={isUp}
-      onClick={() => navigate(`/chart/${s.code}?s=${strategyKey}`)}
-    >
-      {/* 左侧：名称 + 价格 */}
-      <div className="sig-left">
-        <div className="sig-name">{s.name}</div>
-        <div className="sig-code">{s.code}</div>
-      </div>
-
-      {/* 中间：涨跌 + 现价 */}
-      <div className="sig-center">
-        <div className="sig-pct" data-up={isUp}>
-          {isUp ? '+' : ''}{fmt(pct)}%
-        </div>
-        {price != null && (
-          <div className="sig-price">{price.toFixed(2)}</div>
-        )}
-      </div>
-
-      {/* 右侧：RPS 指标 */}
-      <div className="sig-indicators">
-        {s.metadata.RPS50 != null && (
-          <div
-            className="ind-pill"
-            style={{
-              color:          rpsColor(s.metadata.RPS50),
-              boxShadow:      rpsGlow(s.metadata.RPS50),
-              borderColor:    rpsColor(s.metadata.RPS50) + '55',
-            }}
-          >
-            <span className="ind-label">50</span>
-            <b>{fmt(s.metadata.RPS50, 0)}</b>
-          </div>
-        )}
-        {s.metadata.RPS120 != null && (
-          <div
-            className="ind-pill"
-            style={{
-              color:          rpsColor(s.metadata.RPS120),
-              boxShadow:      rpsGlow(s.metadata.RPS120),
-              borderColor:    rpsColor(s.metadata.RPS120) + '55',
-            }}
-          >
-            <span className="ind-label">120</span>
-            <b>{fmt(s.metadata.RPS120, 0)}</b>
-          </div>
-        )}
-        {s.metadata.RPS250 != null && (
-          <div
-            className="ind-pill"
-            style={{
-              color:          rpsColor(s.metadata.RPS250),
-              boxShadow:      rpsGlow(s.metadata.RPS250),
-              borderColor:    rpsColor(s.metadata.RPS250) + '55',
-            }}
-          >
-            <span className="ind-label">250</span>
-            <b>{fmt(s.metadata.RPS250, 0)}</b>
-          </div>
-        )}
-        {s.metadata.BKH && (
-          <div className="ind-pill ind-bkh">{s.metadata.BKH}</div>
-        )}
-        {s.metadata.J != null && (
-          <div className="ind-pill ind-j">
-            <span className="ind-label">J</span>
-            <b>{fmt(s.metadata.J, 0)}</b>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
 
 // ── 折叠卡片 ──────────────────────────────────────────────────────────────
 interface SectionCardProps {
@@ -152,11 +58,13 @@ function SectionCard({
   title, color, bg, count, defaultOpen = false,
   strategyKey, signals, renderReport,
 }: SectionCardProps) {
+  const navigate = useNavigate()
   const [open,     setOpen]    = useState(defaultOpen)
   const [view,    setView]    = useState<ViewMode>('sig')
   const [sortKey, setSortKey] = useState<SortKey>('change_pct')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
 
-  const sorted = useMemo(() => sortSignals(signals, sortKey), [signals, sortKey])
+  const sorted = useMemo(() => sortSignals(signals, sortKey, sortDir), [signals, sortKey, sortDir])
 
   return (
     <div className="section-card" data-open={open}>
@@ -198,33 +106,60 @@ function SectionCard({
 
           {view === 'sig' ? (
             <>
-              {/* 排序 */}
-              <div className="sc-sort">
-                {SORT_OPTIONS.map(o => (
-                  <button
-                    key={o.key}
-                    className={`sort-chip ${sortKey === o.key ? 'active' : ''}`}
-                    style={sortKey === o.key ? {
-                      background: color,
-                      borderColor: color,
-                      color: '#fff',
-                    } : {}}
-                    onClick={() => setSortKey(o.key)}
-                  >
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* 列表 */}
-              <div className="sc-list">
-                {sorted.length === 0 ? (
-                  <div className="sc-empty">暂无信号</div>
-                ) : (
-                  sorted.map(s => (
-                    <StockCard key={s.code} s={s} strategyKey={strategyKey} />
-                  ))
-                )}
+              {/* 表格 */}
+              <div className="sig-table-wrap">
+                <table className="sig-table">
+                  <thead>
+                    <tr>
+                      <th className="sortable" onClick={() => { setSortKey('change_pct'); setSortDir(d => d === 'desc' && sortKey === 'change_pct' ? 'asc' : 'desc') }}>
+                        涨跌幅{sortKey === 'change_pct' ? (sortDir === 'desc' ? ' ↓' : ' ↑') : ''}
+                      </th>
+                      <th className="sortable" onClick={() => { setSortKey('price'); setSortDir(d => d === 'desc' && sortKey === 'price' ? 'asc' : 'desc') }}>
+                        现价{sortKey === 'price' ? (sortDir === 'desc' ? ' ↓' : ' ↑') : ''}
+                      </th>
+                      <th className="sortable" onClick={() => { setSortKey('RPS50'); setSortDir(d => d === 'desc' && sortKey === 'RPS50' ? 'asc' : 'desc') }}>
+                        RPS50{sortKey === 'RPS50' ? (sortDir === 'desc' ? ' ↓' : ' ↑') : ''}
+                      </th>
+                      <th className="sortable" onClick={() => { setSortKey('RPS120'); setSortDir(d => d === 'desc' && sortKey === 'RPS120' ? 'asc' : 'desc') }}>
+                        RPS120{sortKey === 'RPS120' ? (sortDir === 'desc' ? ' ↓' : ' ↑') : ''}
+                      </th>
+                      <th className="sortable" onClick={() => { setSortKey('RPS250'); setSortDir(d => d === 'desc' && sortKey === 'RPS250' ? 'asc' : 'desc') }}>
+                        RPS250{sortKey === 'RPS250' ? (sortDir === 'desc' ? ' ↓' : ' ↑') : ''}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sorted.length === 0 ? (
+                      <tr><td colSpan={5} className="sig-empty">暂无信号</td></tr>
+                    ) : (
+                      sorted.map(s => {
+                        const pct   = s.metadata.change_pct ?? s.up ?? 0
+                        const isUp  = pct >= 0
+                        return (
+                          <tr key={s.code} className="sig-row" onClick={() => navigate(`/chart/${s.code}?s=${strategyKey}&tab=${s.section === 'kd1' ? 'kd1' : ''}`)}>
+                            <td className="sig-name-cell">
+                              <span className="sig-name">{s.name}</span>
+                              <span className="sig-code">{s.code}</span>
+                            </td>
+                            <td className={`sig-pct-cell ${isUp ? 'up' : 'down'}`}>
+                              {isUp ? '+' : ''}{fmt(pct)}%
+                            </td>
+                            <td className="sig-price-cell">{s.price != null ? s.price.toFixed(2) : '—'}</td>
+                            <td className="sig-rps-cell" style={{ color: rpsColor(s.metadata.RPS50), fontWeight: s.metadata.RPS50 != null && s.metadata.RPS50 >= 90 ? 700 : 400 }}>
+                              {s.metadata.RPS50 != null ? fmt(s.metadata.RPS50, 0) : '—'}
+                            </td>
+                            <td className="sig-rps-cell" style={{ color: rpsColor(s.metadata.RPS120), fontWeight: s.metadata.RPS120 != null && s.metadata.RPS120 >= 90 ? 700 : 400 }}>
+                              {s.metadata.RPS120 != null ? fmt(s.metadata.RPS120, 0) : '—'}
+                            </td>
+                            <td className="sig-rps-cell" style={{ color: rpsColor(s.metadata.RPS250), fontWeight: s.metadata.RPS250 != null && s.metadata.RPS250 >= 90 ? 700 : 400 }}>
+                              {s.metadata.RPS250 != null ? fmt(s.metadata.RPS250, 0) : '—'}
+                            </td>
+                          </tr>
+                        )
+                      })
+                    )}
+                  </tbody>
+                </table>
               </div>
             </>
           ) : (
@@ -301,8 +236,8 @@ export default function StrategyPage() {
             />
             <SectionCard
               title="KD1一线红"
-              color="#ff8f00"
-              bg="rgba(255,143,0,0.08)"
+              color="#7b1fa2"
+              bg="rgba(123,31,162,0.08)"
               count={kd1Signals.length}
               defaultOpen={false}
               strategyKey="bian"
